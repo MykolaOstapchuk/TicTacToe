@@ -1,0 +1,55 @@
+Przypadek 1 - Weryfikacja działania aplikacji w przypadku próby zalogowania się za pomocą poprawnych danych:
+	Wykonanie: Manualne/Automatyczne.
+	Priorytet: Wysoki.
+
+	Założenia:
+		- Dane użytkownika znajdują się w bazie danych aplikacji.
+		- Użytkownik znajduje się na etapie logowania.
+
+	Kroki:
+		1. Użytkownik wprowadza poprawne dane w pola "Login" oraz "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje zalogowany.
+		- Użytkownik zostaje automatyczne dodane do kolejki oczekujących graczy.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 2 - Weryfikacja działania aplikacji w przypadku próby zalogowania się za pomocą niepoprawnych danych:
+	Wykonanie: Automatyczne.
+   	Priorytet: Wysoki.
+
+	Założenia:
+		- Dane użytkownika nie znajdują się w bazie danych aplikacji.
+		- Użytkownik znajduje się na etapie logowania.
+
+	Kroki:
+		1. Użytkownik wprowadza niepoprawne dane w pola "Login" lub "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Użytkownik nie zostaje zalogowany.
+		- Zostaje wyświetlona początkowa informacja o ponownej możliwości logowania/rejestracji. 
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 3 - Weryfikacja działania aplikacji dla prób zalogowania się na konto "już zalogowanego użytkownika":
+	Wykonanie: Automatyczne.
+	Priorytet: Średni.
+	
+	Założenia:
+		- Dane użytkownika znajdują się w bazie danych aplikacji.
+		- Konto na które próbuje zalogować się użytkownik jest już zalogowane i ten użytkownik  już znajduje się w "grze/aplikacji".
+
+	Kroki:
+		1. Użytkownik wprowadza dane w pola "Login" lub "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Użytkownik nie zostaje zalogowany.
+		- Zostaje wyświetlona informacja o nieprawidłowym przebiegu procesu logowania.
+		- Zostaje zaznaczona informacja ze dany użytkownik jest już zalogowany i znajduje się w grze/aplikacji.
+		- Zostaje wyświetlona początkowa informacja o ponownej możliwości logowania/rejestracji. 
+
+----------------------------------------------------------------------------------------------------
