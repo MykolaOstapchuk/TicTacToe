@@ -1,0 +1,50 @@
+-- INFO --
+100 Waiting for opponent
+101 Game begins
+102 Game keeps going
+103 Player 1 won
+104 Player 2 won
+105 Draw
+106 Game ended
+
+108 Opponent chosen field
+
+110 You are Player 1. Player 1 begins
+111 You are Player 2. Player 1 begins
+
+115 Rules: Type field using one of [a,b,c] and one of [1,2,3], i.e. a2 ZMIENIONE
+
+180 Select 0 for sign up or 1 for sign in ZMIENIONE
+181 Type username
+182 Type password
+
+194 Opponent turn!
+195 Your turn!
+196 Return to game
+197 Reconnection timeout
+198 Opponent reconnection established
+199 Opponent disconnected, waiting for reconnection
+
+-- ACCEPT --
+200 OK
+201 Correct field
+
+202 User successfully registered
+203 User's credentials successfully checked
+
+-- REQUESTS --
+300 Change player
+
+310 Play again
+
+320 Disconnect
+
+331 Register
+332 Log in
+
+-- ERROR --
+400 Bad field name
+401 Field has been already used
+402 Username already exists
+403 Incorrect credentials
+404 Such user is already signed in
