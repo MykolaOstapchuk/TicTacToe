@@ -2,7 +2,7 @@
 
 ## Team
 - Jakub Sieczka
-  - Git User
+  - [Git User](https://github.com/oPestv2)
 - Mykola Ostapchuk
   - [Git User](https://github.com/MykolaOstapchuk)
 - Maciej Rydzak
