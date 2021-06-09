@@ -1,0 +1,54 @@
+Przypadek 1 - Weryfikacja działania systemu dla właściwej procedury rejestracji:
+	Wykonanie: Manualne/Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Dane wprowadzone przez użytkownika (nazwa użytkownika oraz login) nie znajdują się w bazie danych aplikacji.
+		- Użytkownik znajduje się na etapie rejestracji.
+
+	Kroki:
+		1. Użytkownik wprowadza poprawne dane w pola "Login", "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje zarejestrowany i dane zostają dodane do serwera.
+		- Wyświetlona zostaje informacja o prawidłowym przebiegu procesu rejestracji.
+        - Użytkownik zostaje automatycznie dodane do kolejki oczekujących graczy.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 2 - Weryfikacja działania systemu dla niewłaściwej procedury rejestracji:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Dane wprowadzone przez użytkownika (nazwa użytkownika) nie znajdują się w bazie danych aplikacji.
+		- Użytkownik znajduje się na etapie rejestracji.
+
+	Kroki:
+		1. Użytkownik wprowadza puste dane w pola "Login", "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Pusty znak zostaje zignorowany.
+		- Użytkownik nie zostaje zarejestrowany.
+		- Wyświetlona zostaje informacja podac dane jeszcze raz.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 3 - Weryfikacja działania aplikacji w przypadku próby rejestracji konta przy użyciu istniejącej nazwy użytkownika/loginie:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Dane wprowadzone przez użytkownika znajdują się w bazie danych aplikacji.
+		- Użytkownik znajduje się na etapie rejestracji.
+
+	Kroki:
+		1. Użytkownik wprowadza poprawne dane w pola "Login", "Hasło".
+		2. Użytkownik wysyła dane do serwera.
+
+	Oczekiwany rezultat:
+		- Użytkownik nie zostaje zarejestrowany.
+		- Wyświetlona zostaje informacja o zajętości podanej nazwy użytkownika.
+		- Wyświetlona zostaje początkowa informacja o ponownej możliwości logowania/rejestracji.

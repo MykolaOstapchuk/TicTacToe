@@ -1,0 +1,120 @@
+Przypadek 1 - Weryfikacja działania systemu dla  "nieoczekiwanej" próby rozłączenia się użytkownika na każdym etapie logowania/rejestracji:
+	Wykonanie: Manualne/Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie logowania/rejestracji.
+
+	Kroki:
+		1. Użytkownik wprowadza poprawne dane w pola "Login", "Hasło".
+		2. Użytkownik przerywa dane działania zamykając program
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje odłączany od aplikacji/serwera.
+		- Wyświetlona zostaje informacja o odłączeniu użytkownika na serwerze.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 2 - Weryfikacja działania systemu dla "nieoczekiwanej" próby rozłączenia się użytkownika w trakcie gdy użytkownik jest już w aplikacji i znajduje się w kolejce graczy oczekujących:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie oczekiwania gry/jest w kolejce graczy oczekujących.
+
+	Kroki:
+		1. Użytkownik przerywa etap oczekiwania gry zamykając program.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje odłączany od aplikacji/serwera.
+		- Wyświetlona zostaje informacja o odłączeniu użytkownika na serwerze.
+		- Dane użytkownika są usuwane z serwera (dane użytkownika z kolejki graczy oczekujących)
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 3 - Weryfikacja działania systemu dla "nieoczekiwanej" próby rozłączenia się użytkownika w trakcie gdy użytkownik jest już w aplikacji i znajduje się w "trakcie gry" i jest jego kolejka:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie trwania gry i jest jego kolejka do wykonania działania w grze.
+
+	Kroki:
+		1. Użytkownik przerywa etap gry zamykając program.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje odłączany od aplikacji/serwera.
+		- Dla przeciwnika wyświetlona zostaje informacja o odłączeniu "oponenta".
+		- Dane użytkownika są dodane do kolejki graczy z możliwością dokonania ponownego polaczenia do gry.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 3a - Weryfikacja działania systemu dla momentu gdy rozłączony użytkownik nie powróci się do gry za 30 sekund po rozłączeniu:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie logowania/rejestracji
+
+	Kroki:
+		1. Użytkownik w trakcie 30 sekund nie zaloguje się na swoje konto.
+
+	Oczekiwany rezultat:
+		- Dla przeciwnika wyświetlona zostaje informacja o tym ze oponent nie wszedł z powrotem do gry i ze on wygrywa automatycznie.
+		- Dane "rozłączonego" użytkownika są usuwane z kolejki graczy grających/oczekujących na powrót do istniejącej gry.
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 3b - Weryfikacja działania systemu dla momentu gdy rozłączony użytkownik powróci się do gry za 30 sekund po rozłączeniu:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie logowania/rejestracji
+
+	Kroki:
+		1. Użytkownik w trakcie do 30 sekund zaloguje się na swoje konto.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje połączony z powrotem od aplikacji/serwera i do istniejącej gry.
+		- Dla przeciwnika wyświetlona zostaje informacja o tym ze oponent wrócił z powrotem do gry i ze gra trwa nadal.
+		- Kontynuacja gry w sposób normalny(dotychczasowy).
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 4 - Weryfikacja działania systemu dla "nieoczekiwanej" próby rozłączenia się użytkownika w trakcie gdy użytkownik jest już w aplikacji i znajduje się w  "trakcie gry" i jest kolejka przeciwnika:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik znajduje się na etapie trwania gry i jest kolejka jego przeciwnika do wykonania działania w grze.
+
+	Kroki:
+		1. Użytkownik przerywa etap gry zamykając program.
+
+	Oczekiwany rezultat:
+		- Użytkownik zostaje odłączany od aplikacji/serwera.
+		- Po dokonaniu działania przeciwniku zostaje wyświetlona zostaje informacja o odłączeniu "oponenta".
+		- Dane użytkownika są dodane do kolejki graczy z możliwością dokonania ponownego łączenia do gry.
+
+
+----------------------------------------------------------------------------------------------------
+
+Przypadek 5 - Weryfikacja działania systemu dla ponownego zalogowania się użytkownika oraz sprawdzenia poprawności usuwania wylogowanego użytkownika z kolejki graczy oczekujących:
+	Wykonanie: Automatyczne.
+    	Priorytet: Wysoki.
+
+	Założenia:
+		- Użytkownik poprawnie został usunięty z kolejki graczy.
+		- Użytkownik może zalogować się ponownie.
+
+	Kroki:
+		1. Użytkownik przerywa etap oczekiwania gry zamykając program.
+		2. Użytkownik próbuje zalogować się ponownie.
+		3. Kolejny użytkownik loguje się do aplikacji.
+
+	Oczekiwany rezultat:
+		- Logowanie przebiegło pomyślnie (nie ma błędu ze użytkownik jest ciągle zalogowany).
+		- Kolejny użytkownik nie zaczyna gry z nie zalogowanym graczem, ale trafia do kolejki oczekujących.
+
+----------------------------------------------------------------------------------------------------
