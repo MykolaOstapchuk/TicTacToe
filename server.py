@@ -7,6 +7,8 @@ import random
 import database
 import ssl
 import time
+import uuid
+from datetime import datetime
 
 # INFO: MAIN function on the very bottom
 
@@ -16,9 +18,17 @@ HOST, PORT = '127.0.0.3', 1796
 
 SERVER_CERT = 'certs/server.crt'
 SERVER_KEY = 'certs/server.key'
-CLIENT_CERT = 'certs/client.crt'
 
 # == HELPER FUNCTIONS ===============================================
+
+def strtoassoc(data):
+    dict = {}
+    parts = data.split("\r\n")
+    for part in parts:
+        subparts = part.split(":")
+        dict[subparts[0]] = subparts[1]
+    dict['Message'] = dict['Code'] + ' ' + dict['Data']
+    return dict
 
 def send_to_player(info, *sockets):
     for socket in sockets:
@@ -38,7 +48,30 @@ def send_to_player_direct(info, *sockets):
 
 # in rcv it is possible to use just id, not passing socket and retrieving id
 def rcv(id):
-    return socket_input_data.get(id).get(True)
+    # get Player obj
+    plr = Game.p_players[id]
+    # get data from queue and convert to associative array
+    dict = strtoassoc(socket_input_data.get(id).get(True))
+    # validate data
+    if validate_input_data(plr, dict["UUID"]):
+        return dict["Data"]
+    else:
+        send_to_player("405 Incorrect session ID", plr.socket)
+        # remove socket from inputs
+        while plr.socket in inputs:
+            inputs.remove(plr.socket)
+
+        # remove socket from outputs
+        while plr.socket in outputs:
+            outputs.remove(plr.socket)
+
+        if plr in Game.r_players:
+            Game.r_players.remove(plr)
+        Game.p_players.remove(plr)
+        plr.socket.close()
+        if plr.socket in Game.players:
+            Game.players.remove(plr.socket)
+        del plr
 
 # it is necessary to receive data independently too when user is authorizing
 def rcv_direct(socket):
@@ -47,13 +80,18 @@ def rcv_direct(socket):
         data += socket.recv(1)
     return data.decode()[:-4]
 
+def validate_input_data(plr, UUID):
+    if plr.uuid == (str(plr.id) + '_' + UUID): return True
+    return False
+
+
 # ====================================================================
 
 class Game:
     # map socket -> Player obj
     players = {}
 
-    # waiting players object queue
+    # waiting Players object queue
     w_players = queue.Queue()
 
     # map player id -> Player obj
@@ -153,8 +191,11 @@ class Game:
                             # it means put back to logged in players
                             Game.players[log_plr] = g_plr
 
+                            # resend uuid
+                            send_to_player(f"120 {g_plr.uuid.split('_')[1]}", g_plr.socket)
+
                             # send info that reconnection was successful
-                            send_to_player_direct("196 Return to game", g_plr.socket)
+                            send_to_player("196 Return to game", g_plr.socket)
 
                             # send info who's turn
                             if g_plr.id == room.current.id:
@@ -246,7 +287,7 @@ class Room:
         send_to_player(info, self.player1.socket, self.player2.socket)
 
         # send rules
-        send_to_player("115 Rules: Type field using one of [a,b,c] and one of [1,2,3], i.e. a2",
+        send_to_player("115 Rules - Type field using one of [a,b,c] and one of [1,2,3], i.e. a2",
                        self.player1.socket, self.player2.socket)
 
         # player 1 begins, send info to players
@@ -401,6 +442,8 @@ class Player:
     addr = None
     # disconnection time
     disconnect_time = None
+    # uuid
+    uuid = None
 
     def __init__(self, socket, addr):
         self.socket = socket
@@ -491,10 +534,19 @@ class Player:
         inputs.append(self.socket)
 
         if self.id not in Game.r_players:
+            # create uuid
+            user_uuid = str(uuid.uuid4())
+
+            # set uuid (ID + '_' + uuid)
+            self.uuid = str(self.id) + '_' + user_uuid
+
             # create output data queue
             socket_output_data[self.id] = queue.Queue()
             # create input data queue
             socket_input_data[self.id] = queue.Queue()
+
+            # send uuid
+            send_to_player(f"120 {user_uuid}", self.socket)
 
             # send to player waiting info
             send_to_player("100 Waiting for opponent", self.socket)
@@ -523,165 +575,185 @@ class Player:
 
 
 # == MAIN =============================================================
+if __name__ == "__main__":
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(5)
 
-context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-context.verify_mode = ssl.CERT_REQUIRED
-context.load_cert_chain(certfile=SERVER_CERT, keyfile=SERVER_KEY)
-context.load_verify_locations(cafile=CLIENT_CERT)
+    # lists of sockets to watch for input and output events
+    inputs = [s]
+    outputs = []
+    # mapping socket -> queue of data to send on that socket when feasible
+    socket_output_data = {}
+    # mapping socket -> queue of data received
+    socket_input_data = {}
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((HOST, PORT))
-s.listen(5)
+    # info server start
+    print("Server running...")
 
-# lists of sockets to watch for input and output events
-inputs = [s]
-outputs = []
-# mapping socket -> queue of data to send on that socket when feasible
-socket_output_data = {}
-# mapping socket -> queue of data received
-socket_input_data = {}
+    # create game object
+    game = Game()
 
-# info server start
-print("Server running...")
+    # event-driven server part
+    try:
+        while True:
+            # create list of input and output sockets (exception is not used)
+            # 4th param '0' avoids blocking select
+            i, o, e = select.select(inputs, outputs, [], 0)
 
-# create game object
-game = Game()
+            # iterate inputs list
+            for curr_socket in i:
+                # if socket is server - accept new client
+                if curr_socket is s:
+                    try:
+                        CLIENT_CERT = 'certs/client_crt_'
 
-# event-driven server part
-try:
-    while True:
-        # create list of input and output sockets (exception is not used)
-        # 4th param '0' avoids blocking select
-        i, o, e = select.select(inputs, outputs, [], 0)
+                        client, addr = s.accept()
+                        print("Connected: " + addr[0])
 
-        # iterate inputs list
-        for curr_socket in i:
-            # if socket is server - accept new client
-            if curr_socket is s:
-                try:
-                    client, addr = s.accept()
+                        cert = ''
+                        while "-----END CERTIFICATE-----" not in cert:
+                            cert += client.recv(100).decode()
 
-                    print("Connected: " + addr[0])
+                        CLIENT_CERT += str(datetime.now().time()).replace(":", "_").replace(".", "_") + '.crt'
 
-                    # wrap socket to SSL
-                    client = context.wrap_socket(client, server_side=True)
+                        serv_file = open(CLIENT_CERT, "w")
+                        serv_file.write(cert)
+                        serv_file.close()
 
-                    # create new player
-                    player = Player(client, addr)
-                # in case of client multiple connection
-                except Exception:
-                    print("Unresolved client error")
-            else:
-                # get player object - could be used in a few places
-                plr = Game.players[curr_socket]
-                try:
-                    # other input events mean data arrived, or disconnections
-                    data = rcv_direct(curr_socket)
-                    print(f"Received from {curr_socket.getsockname()} data: {data}")
+                        client.close()
+                        client, addr = s.accept()
 
-                    # 320 code - disconnect request
-                    if data.split(" ")[0] == "320":
-                        # remove player from inputs
+                        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                        context.verify_mode = ssl.CERT_REQUIRED
+                        context.load_cert_chain(certfile=SERVER_CERT, keyfile=SERVER_KEY)
+                        context.load_verify_locations(cafile=CLIENT_CERT)
+
+                        # wrap socket to SSL
+                        client = context.wrap_socket(client, server_side=True)
+
+                        # create new player
+                        player = Player(client, addr)
+                        # in case of client multiple connection
+                    except Exception:
+                        print("Unresolved client error")
+                else:
+                    # get player object - could be used in a few places
+                    plr = Game.players[curr_socket]
+                    try:
+                        # other input events mean data arrived, or disconnections
+                        data = rcv_direct(curr_socket)
+                        print(f"Received from {curr_socket.getsockname()} data: {data}")
+
+                        # 320 code - disconnect request
+                        if data.split(" ")[0] == "320":
+                            # remove player from inputs
+                            while curr_socket in inputs:
+                                inputs.remove(curr_socket)
+
+                            # remove player from outputs
+                            while curr_socket in outputs:
+                                outputs.remove(curr_socket)
+
+                            # delete Player obj
+                            del plr
+
+                            # delete curr_socket from dict
+                            Game.players = {key: val for key, val in Game.players.items() if key != curr_socket}
+
+                            print(f"Disconnected from {curr_socket.getsockname()}")
+
+                            # close socket
+                            curr_socket.close()
+                        # 310 code - play again request
+                        elif data.split(" ")[0] == "310":
+                            # send positive response
+                            send_to_player("200 Ok", curr_socket)
+
+                            # send waiting info to player
+                            send_to_player("100 Waiting for opponent", curr_socket)
+
+                            # put player again to queue
+                            Game.w_players.put(plr)
+                        # any other data received
+                        else:
+                            # add data to queue
+                            socket_input_data[plr.id].put(data)
+                    # handle unexpected disconnection
+                    except socket.error:
+                        # remove socket from inputs
                         while curr_socket in inputs:
                             inputs.remove(curr_socket)
 
-                        # remove player from outputs
+                        # remove socket from outputs
                         while curr_socket in outputs:
                             outputs.remove(curr_socket)
 
-                        # delete Player obj
-                        del plr
+                        # check if player is in playing players map - if true it means that player was playing
+                        if plr.id in Game.p_players:
 
-                        # delete curr_socket from dict
+                            # set disconnection time
+                            plr.set_disconnect(time.time())
+
+                            # send to opponent that player lost connection
+                            try:
+                                send_to_player("199 Opponent disconnected, waiting for reconnection", plr.opponent.socket)
+                            # in case of opponent disconnection, it is unavailable to send data to opponent
+                            except KeyError:
+                                pass
+
+                            # add Player obj to reconnecting players map
+                            Game.r_players[plr.id] = plr
+                        else:
+                            # remove all player data - remove player from waiting players queue
+                            temp_queue = list(Game.w_players.queue)
+                            if Game.players[curr_socket] in temp_queue:
+                                temp_queue.remove(Game.players[curr_socket])
+                                Game.w_players.queue = queue.deque(temp_queue)
+
+                            # remove player input/output queues
+                            socket_input_data = {key: val for key, val in socket_input_data.items() if key != plr.id}
+                            socket_output_data = {key: val for key, val in socket_output_data.items() if key != plr.id}
+
+                            # delete Player obj
+                            del plr
+
+                        # remove value from dict
                         Game.players = {key: val for key, val in Game.players.items() if key != curr_socket}
 
+                        # a disconnect, give a message and clean up
                         print(f"Disconnected from {curr_socket.getsockname()}")
 
                         # close socket
                         curr_socket.close()
-                    # 310 code - play again request
-                    elif data.split(" ")[0] == "310":
-                        # send positive response
-                        send_to_player("200 Ok", curr_socket)
 
-                        # send waiting info to player
-                        send_to_player("100 Waiting for opponent", curr_socket)
+            for curr_socket in o:
+                # get player object
+                plr = Game.players[curr_socket]
+                # output events always mean we can send some data
+                try:
+                    # get message from queue
+                    send = socket_output_data[plr.id].get_nowait()
+                    # if send means send contains data
+                    if send:
+                        msg_code = send.split(" ")[0]
+                        msg_data = send[len(msg_code)+1:]
+                        message = f"UUID:{plr.uuid.split('_')[1]}\r\nCode:{msg_code}\r\nData:{msg_data}"
 
-                        # put player again to queue
-                        Game.w_players.put(Game.players[curr_socket])
-                    # any other data received
-                    else:
-                        # add data to queue
-                        socket_input_data[plr.id].put(data)
-                # handle unexpected disconnection
-                except socket.error:
-                    # remove socket from inputs
-                    while curr_socket in inputs:
-                        inputs.remove(curr_socket)
+                        print("> " + message)
 
-                    # remove socket from outputs
-                    while curr_socket in outputs:
+                        data = curr_socket.sendall(message.encode() + b'\r\n\r\n')
+                    # check if queue still contains data
+                    if socket_output_data[plr.id].empty():
                         outputs.remove(curr_socket)
-
-                    # check if player is in playing players map - if true it means that player was playing
-                    if plr.id in Game.p_players:
-
-                        # set disconnection time
-                        plr.set_disconnect(time.time())
-
-                        # send to opponent that player lost connection
-                        try:
-                            send_to_player("199 Opponent disconnected, waiting for reconnection", plr.opponent.socket)
-                        # in case of opponent disconnection, it is unavailable to send data to opponent
-                        except KeyError:
-                            pass
-
-                        # add Player obj to reconnecting players map
-                        Game.r_players[plr.id] = plr
-                    else:
-                        # remove all player data - remove player from waiting players queue
-                        temp_queue = list(Game.w_players.queue)
-                        if Game.players[curr_socket] in temp_queue:
-                            temp_queue.remove(Game.players[curr_socket])
-                            Game.w_players.queue = queue.deque(temp_queue)
-
-                        # remove player input/output queues
-                        socket_input_data = {key: val for key, val in socket_input_data.items() if key != plr.id}
-                        socket_output_data = {key: val for key, val in socket_output_data.items() if key != plr.id}
-
-                        # delete Player obj
-                        del plr
-
-                    # remove value from dict
-                    Game.players = {key: val for key, val in Game.players.items() if key != curr_socket}
-
-                    # a disconnect, give a message and clean up
-                    print(f"Disconnected from {curr_socket.getsockname()}")
-
-                    # close socket
-                    curr_socket.close()
-
-        for curr_socket in o:
-            # get player object
-            plr = Game.players[curr_socket]
-            # output events always mean we can send some data
-            try:
-                # get message from queue
-                send = socket_output_data[plr.id].get_nowait()
-                # if send means send contains data
-                if send:
-                    data = curr_socket.sendall(send.encode() + b'\r\n\r\n')
-                # check if queue still contains data
-                if socket_output_data[plr.id].empty():
-                    outputs.remove(curr_socket)
-            # in case of empty queue when no data is available in queue (because was sent)
-            except queue.Empty:
-                pass
-            # in case of player disconnection
-            except socket.error:
-                pass
-# in case of any uncaught error
-except socket.error:
-    print("Error")
-finally:
-    s.close()
+                # in case of empty queue when no data is available in queue (because was sent)
+                except queue.Empty:
+                    pass
+                # in case of player disconnection
+                except socket.error:
+                    pass
+    # in case of any uncaught error
+    except socket.error:
+        print("Error")
+    finally:
+        s.close()
