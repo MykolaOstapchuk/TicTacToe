@@ -9,11 +9,18 @@
   - [Git User](https://github.com/kazdyrkeicam)
 
 ## Jak zagrać
-Należy sklonować repozytorium następnie uruchomić serwer i klientów.
+Klienta można uruchomić na dwa sposoby:
+- bez parametrów
+  - wtedy serwer dobierze domyślny certyfikat klienta
+- podając jako parametry ścieżkę do certyfikatu, a następnie klucza prywatnego.
+
+`client.py certs/client.crt certs/client.key`
 
 > Wymagany Python Interpreter 3.8
 
-Następnie klienci grają między sobą za pomocą wysyłania kodów pól planszy gdy jest ich kolej.
+Następnym krokiem jest logowanie. Room zostanie utworzony gdy dwóch graczy będzie w kolejce.
+
+Klienci grają między sobą za pomocą wysyłania kodów pól planszy gdy jest ich kolej.
 Plansza wygląda następująco:
 |  |  |  |
 |--|--|--|
